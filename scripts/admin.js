@@ -8,6 +8,7 @@ const state = {
   historyRefreshHandle: null
 };
 const LOCAL_API_ORIGIN = "http://127.0.0.1:3000";
+const LOCALHOST_API_ORIGIN = "http://localhost:3000";
 
 const els = {
   adminIdentityLine: document.getElementById("adminIdentityLine"),
@@ -36,24 +37,65 @@ const els = {
 };
 
 const api = async (url, options = {}) => {
-  const resolveApiUrl = () => {
-    if (window.location.hostname === "127.0.0.1" && window.location.port === "3000") {
-      return url;
+  const buildCandidates = (inputUrl) => {
+    if (/^https?:\/\//i.test(inputUrl)) {
+      return [inputUrl];
     }
-    return `${LOCAL_API_ORIGIN}${url}`;
+
+    const candidates = [];
+    if (window.location.origin && /^https?:/i.test(window.location.origin)) {
+      candidates.push(`${window.location.origin}${inputUrl}`);
+    }
+
+    if (window.location.protocol !== "https:") {
+      candidates.push(`${LOCAL_API_ORIGIN}${inputUrl}`);
+      candidates.push(`${LOCALHOST_API_ORIGIN}${inputUrl}`);
+    }
+
+    return [...new Set(candidates)];
   };
 
-  const response = await fetch(resolveApiUrl(), {
-    credentials: "same-origin",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
+  const candidates = buildCandidates(url);
+  const attempted = [];
 
-  const payload = await response.json().catch(() => ({}));
-  return { response, payload };
+  for (const candidateUrl of candidates) {
+    try {
+      const candidateOrigin = new URL(candidateUrl).origin;
+      const credentials = candidateOrigin === window.location.origin ? "same-origin" : "omit";
+
+      const response = await fetch(candidateUrl, {
+        credentials,
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      attempted.push(`${candidateUrl} -> ${response.status}`);
+
+      const shouldTryNext =
+        (response.status === 404 || response.status === 405) &&
+        candidateUrl !== candidates[candidates.length - 1];
+
+      if (shouldTryNext) {
+        continue;
+      }
+
+      return { response, payload, networkError: null, attempted, apiUrl: candidateUrl };
+    } catch (error) {
+      attempted.push(`${candidateUrl} -> network_error(${error?.message || "failed"})`);
+    }
+  }
+
+  return {
+    response: null,
+    payload: {},
+    networkError: `Failed to fetch. Tried: ${attempted.join(" | ")}`,
+    attempted,
+    apiUrl: null
+  };
 };
 
 const setStatusStrip = (element, message, tone = "neutral") => {
@@ -151,8 +193,8 @@ const renderAdmins = (admins) => {
 };
 
 const loadScanHistory = async () => {
-  const { response, payload } = await api("/api/admin-history?limit=30");
-  if (!response.ok || !payload.ok) {
+  const { response, payload, networkError } = await api("/api/admin-history?limit=30");
+  if (networkError || !response || !response.ok || !payload.ok) {
     return;
   }
   renderHistory(payload.logs || []);
@@ -163,21 +205,31 @@ const loadAdminUsers = async () => {
     return;
   }
 
-  const { response, payload } = await api("/api/admin-users");
-  if (!response.ok || !payload.ok) {
+  const { response, payload, networkError } = await api("/api/admin-users");
+  if (networkError || !response || !response.ok || !payload.ok) {
     return;
   }
   renderAdmins(payload.admins || []);
 };
 
 const redeemScannedValue = async (scannedValue, scanChannel) => {
-  const { response, payload } = await api("/api/admin-redeem", {
+  const { response, payload, networkError } = await api("/api/admin-redeem", {
     method: "POST",
     body: JSON.stringify({
       scannedValue,
       scanChannel
     })
   });
+
+  if (networkError) {
+    setScanResult({
+      category: "error",
+      code: "network_error",
+      message: networkError
+    });
+    beep("error");
+    return;
+  }
 
   if (!payload.ok) {
     setScanResult({
@@ -292,12 +344,17 @@ const stopScanner = async () => {
 };
 
 const login = async ({ email, password }) => {
-  const { response, payload } = await api("/api/admin-login", {
+  const { response, payload, networkError } = await api("/api/admin-login", {
     method: "POST",
     body: JSON.stringify({ email, password })
   });
 
-  if (!response.ok || !payload.ok) {
+  if (networkError) {
+    setStatusStrip(els.loginStatus, networkError, "error");
+    return;
+  }
+
+  if (!response || !response.ok || !payload.ok) {
     setStatusStrip(els.loginStatus, payload.error?.message || "Login failed.", "error");
     return;
   }
@@ -321,9 +378,13 @@ const login = async ({ email, password }) => {
 
 const logout = async () => {
   await stopScanner();
-  await api("/api/admin-logout", {
+  const { networkError } = await api("/api/admin-logout", {
     method: "POST"
   });
+  if (networkError) {
+    setStatusStrip(els.loginStatus, networkError, "error");
+    return;
+  }
   state.admin = null;
   state.event = null;
   renderAdminState();
@@ -337,12 +398,17 @@ const logout = async () => {
 };
 
 const seedSupervisor = async (payload) => {
-  const { response, payload: result } = await api("/api/admin-seed-supervisor", {
+  const { response, payload: result, networkError } = await api("/api/admin-seed-supervisor", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 
-  if (!response.ok || !result.ok) {
+  if (networkError) {
+    setStatusStrip(els.loginStatus, networkError, "error");
+    return;
+  }
+
+  if (!response || !response.ok || !result.ok) {
     setStatusStrip(els.loginStatus, result.error?.message || "Supervisor setup failed.", "error");
     return;
   }
@@ -352,12 +418,17 @@ const seedSupervisor = async (payload) => {
 };
 
 const submitOverride = async ({ passCode, action, note }) => {
-  const { response, payload } = await api("/api/admin-override", {
+  const { response, payload, networkError } = await api("/api/admin-override", {
     method: "POST",
     body: JSON.stringify({ passCode, action, note })
   });
 
-  if (!response.ok || !payload.ok) {
+  if (networkError) {
+    setStatusStrip(els.overrideStatus, networkError, "error");
+    return;
+  }
+
+  if (!response || !response.ok || !payload.ok) {
     setStatusStrip(els.overrideStatus, payload.error?.message || "Override failed.", "error");
     return;
   }
@@ -367,12 +438,17 @@ const submitOverride = async ({ passCode, action, note }) => {
 };
 
 const createAdminAccount = async ({ fullName, email, password, role }) => {
-  const { response, payload } = await api("/api/admin-users", {
+  const { response, payload, networkError } = await api("/api/admin-users", {
     method: "POST",
     body: JSON.stringify({ fullName, email, password, role })
   });
 
-  if (!response.ok || !payload.ok) {
+  if (networkError) {
+    setStatusStrip(els.overrideStatus, networkError, "error");
+    return;
+  }
+
+  if (!response || !response.ok || !payload.ok) {
     setStatusStrip(els.overrideStatus, payload.error?.message || "Failed to create admin.", "error");
     return;
   }
@@ -439,9 +515,19 @@ const bootstrap = async () => {
   bindEvents();
   renderAdminState();
 
-  const { response, payload } = await api("/api/admin-me");
-  if (!response.ok || !payload.ok) {
-    setStatusStrip(els.loginStatus, "Login to start scanning.");
+  const { response, payload, networkError } = await api("/api/admin-me");
+  if (networkError) {
+    setStatusStrip(els.loginStatus, networkError, "error");
+    setScanResult({
+      code: "api_offline",
+      category: "error",
+      message: "Cannot reach admin API."
+    });
+    return;
+  }
+
+  if (!response || !response.ok || !payload.ok) {
+    setStatusStrip(els.loginStatus, payload.error?.message || "Login to start scanning.");
     setScanResult({
       code: "ready",
       category: "neutral",

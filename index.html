@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PassDigi | Digital Event Pass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/main.css" />
+  </head>
+  <body class="user-page">
+    <div class="noise-layer" aria-hidden="true"></div>
+    <header class="site-header">
+      <div class="brand-wrap">
+        <p class="eyebrow">ONE-TIME SCAN ACCESS</p>
+        <h1>PassDigi Event Gate Pass</h1>
+        <p class="subhead">Register once. Show QR. Enter fast.</p>
+      </div>
+      <a class="admin-link" href="/admin.html">Admin Scanner</a>
+    </header>
+
+    <main class="content-grid">
+      <section class="panel registration-panel" id="registrationPanel">
+        <h2>Get Your Pass</h2>
+        <p class="muted">
+          One pass per person. Use valid email and phone. Your pass stays on this device.
+        </p>
+
+        <form id="registrationForm" novalidate>
+          <label class="field">
+            <span>Full Name</span>
+            <input id="nameInput" name="name" autocomplete="name" required />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input id="emailInput" name="email" type="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span>Phone</span>
+            <input id="phoneInput" name="phone" type="tel" autocomplete="tel" required />
+          </label>
+
+          <button class="btn btn-primary" id="registerButton" type="submit">Generate My Pass</button>
+        </form>
+
+        <div class="status-strip" id="registrationStatus" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel pass-panel" id="passPanel">
+        <div class="pass-topline">
+          <p class="eyebrow">DIGITAL ENTRY PASS</p>
+          <span class="state-pill" id="passStatePill">Not Issued</span>
+        </div>
+
+        <div class="ticket-card" id="ticketCard">
+          <div class="ticket-column">
+            <p class="ticket-label">Attendee</p>
+            <h3 id="passName">-</h3>
+            <p id="passEmail" class="mono-line">-</p>
+            <p id="passPhone" class="mono-line">-</p>
+          </div>
+          <div class="ticket-column qr-column">
+            <div id="qrCanvasWrap" class="qr-wrap"></div>
+            <p class="mono-line" id="passCode">PASS CODE: -</p>
+            <p class="tiny-text">Scan only on official PassDigi admin scanner</p>
+          </div>
+        </div>
+
+        <div class="event-meta">
+          <p id="eventNameLine">Event: -</p>
+          <p id="eventVenueLine">Venue: -</p>
+          <p id="eventTimeLine">Window: -</p>
+        </div>
+
+        <div class="pass-actions">
+          <button class="btn btn-secondary" id="refreshStatusButton" type="button">Refresh Status</button>
+          <button class="btn btn-secondary" id="downloadPassButton" type="button">Download Pass (PNG)</button>
+          <button class="btn btn-ghost" id="clearLocalButton" type="button">Clear Local Pass</button>
+        </div>
+
+        <div class="status-strip" id="passStatus" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <div class="verify-overlay hidden" id="verifyOverlay" aria-hidden="true">
+      <div class="verify-card">
+        <p class="eyebrow">ENTRY CONFIRMED</p>
+        <h2>Pass Verified</h2>
+        <p>Enjoy the event. This pass is now closed for re-entry.</p>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="/scripts/user.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PassDigi | Admin Scanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/main.css" />
+  </head>
+  <body class="admin-page">
+    <div class="noise-layer" aria-hidden="true"></div>
+
+    <header class="site-header admin-header">
+      <div class="brand-wrap">
+        <p class="eyebrow">SECURED GATE TERMINAL</p>
+        <h1>PassDigi Admin Scanner</h1>
+        <p class="subhead" id="adminIdentityLine">Session not active</p>
+      </div>
+      <div class="header-actions">
+        <a class="admin-link" href="/index.html">User Pass</a>
+        <button class="btn btn-ghost hidden" id="logoutButton" type="button">Logout</button>
+      </div>
+    </header>
+
+    <main class="content-grid admin-grid">
+      <section class="panel login-panel" id="loginPanel">
+        <h2>Admin Login</h2>
+        <form id="loginForm" novalidate>
+          <label class="field">
+            <span>Email</span>
+            <input name="email" id="loginEmail" type="email" autocomplete="username" required />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input name="password" id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="btn btn-primary" id="loginButton" type="submit">Start Scanner Session</button>
+        </form>
+
+        <details class="setup-block">
+          <summary>First-time setup (create supervisor)</summary>
+          <form id="seedForm" novalidate>
+            <label class="field">
+              <span>Setup Key</span>
+              <input id="seedKey" required />
+            </label>
+            <label class="field">
+              <span>Full Name</span>
+              <input id="seedName" required />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input id="seedEmail" type="email" required />
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input id="seedPassword" type="password" required />
+            </label>
+            <button class="btn btn-secondary" type="submit">Create Supervisor</button>
+          </form>
+        </details>
+
+        <div class="status-strip" id="loginStatus" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel scanner-panel hidden" id="scannerPanel">
+        <div class="scanner-toolbar">
+          <h2>Live Scanner</h2>
+          <div class="scanner-buttons">
+            <button class="btn btn-secondary" id="startScannerButton" type="button">Start Camera</button>
+            <button class="btn btn-ghost" id="stopScannerButton" type="button">Stop Camera</button>
+          </div>
+        </div>
+
+        <div id="scannerViewport" class="scanner-viewport"></div>
+
+        <form class="manual-form" id="manualForm" novalidate>
+          <label class="field inline-field">
+            <span>Manual Pass Code</span>
+            <input id="manualCodeInput" placeholder="PD-XXXXXXXX" />
+          </label>
+          <button class="btn btn-secondary" type="submit">Verify Code</button>
+        </form>
+
+        <div class="scan-result neutral" id="scanResult">
+          <p class="mono-line" id="scanResultCode">READY</p>
+          <p id="scanResultMessage">Awaiting scan input.</p>
+        </div>
+      </section>
+
+      <section class="panel history-panel hidden" id="historyPanel">
+        <h2>Recent Scans</h2>
+        <ul class="history-list" id="historyList"></ul>
+      </section>
+
+      <section class="panel override-panel hidden" id="overridePanel">
+        <h2>Override Controls</h2>
+        <form id="overrideForm" novalidate>
+          <label class="field">
+            <span>Pass Code</span>
+            <input id="overridePassCode" placeholder="PD-XXXXXXXX" required />
+          </label>
+          <label class="field">
+            <span>Action</span>
+            <select id="overrideAction">
+              <option value="force_redeem">Force Redeem</option>
+              <option value="revert_redemption">Revert Redemption</option>
+              <option value="revoke">Revoke Pass</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Reason</span>
+            <input id="overrideNote" maxlength="240" required />
+          </label>
+          <button class="btn btn-secondary" type="submit">Apply Override</button>
+        </form>
+        <div class="status-strip" id="overrideStatus" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel admins-panel hidden" id="adminsPanel">
+        <h2>Admin Accounts</h2>
+        <form id="createAdminForm" class="create-admin-form hidden" novalidate>
+          <label class="field">
+            <span>Full Name</span>
+            <input id="newAdminName" required />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input id="newAdminEmail" type="email" required />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="newAdminPassword" type="password" required />
+          </label>
+          <label class="field">
+            <span>Role</span>
+            <select id="newAdminRole">
+              <option value="scanner">Scanner</option>
+              <option value="supervisor">Supervisor</option>
+            </select>
+          </label>
+          <button class="btn btn-secondary" type="submit">Create Admin</button>
+        </form>
+        <ul class="admin-list" id="adminList"></ul>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="/scripts/admin.js" defer></script>
+  </body>
+</html>

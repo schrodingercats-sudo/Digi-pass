@@ -1,0 +1,25 @@
+{
+  "name": "pass-digi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-time scan digital pass verification system for events.",
+  "scripts": {
+    "dev": "node scripts/local-dev-server.js",
+    "dev:open": "node scripts/start-local.js",
+    "start": "node scripts/local-dev-server.js",
+    "dev:vercel": "vercel dev",
+    "hash-password": "node scripts/hash-password.mjs",
+    "smoke-test": "node scripts/smoke-test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.2",
+    "bcryptjs": "^2.4.3",
+    "cookie": "^1.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "qrcode": "^1.5.4",
+    "zod": "^3.25.76"
+  }
+}

@@ -97,7 +97,8 @@ module.exports = async (req, res) => {
       tokenVersion: pass.token_version
     });
 
-    const qrPayload = `PDG:${token}`;
+    // Keep scan payload short for faster camera decode speed at entry gate.
+    const qrPayload = pass.pass_code;
     const qrImageDataUrl = await generateQrDataUrl(qrPayload, 164);
 
     return sendOk(res, {

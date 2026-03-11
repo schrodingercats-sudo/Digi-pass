@@ -3,6 +3,7 @@ const state = {
   event: null,
   scanner: null,
   scannerActive: false,
+  scanInFlight: false,
   lastDecodedValue: "",
   lastDecodedAt: 0,
   historyRefreshHandle: null
@@ -213,52 +214,71 @@ const loadAdminUsers = async () => {
 };
 
 const redeemScannedValue = async (scannedValue, scanChannel) => {
-  const { response, payload, networkError } = await api("/api/admin-redeem", {
-    method: "POST",
-    body: JSON.stringify({
-      scannedValue,
-      scanChannel
-    })
-  });
-
-  if (networkError) {
-    setScanResult({
-      category: "error",
-      code: "network_error",
-      message: networkError
-    });
-    beep("error");
+  if (state.scanInFlight) {
     return;
   }
 
-  if (!payload.ok) {
-    setScanResult({
-      category: "error",
-      code: "error",
-      message: payload.error?.message || "Scan request failed."
-    });
-    beep("error");
-    return;
-  }
-
-  const result = payload.result;
-  const attendee = payload.pass?.name ? ` (${payload.pass.name})` : "";
+  state.scanInFlight = true;
   setScanResult({
-    category: result.category,
-    code: result.code,
-    message: `${result.message}${attendee}`
+    category: "neutral",
+    code: "verifying",
+    message: "Verifying pass..."
   });
-  beep(result.category);
-  await loadScanHistory();
 
-  if (!response.ok && result.category === "error") {
-    setStatusStrip(els.loginStatus, "Scan rejected.", "error");
+  try {
+    const { response, payload, networkError } = await api("/api/admin-redeem", {
+      method: "POST",
+      body: JSON.stringify({
+        scannedValue,
+        scanChannel
+      })
+    });
+
+    if (networkError) {
+      setScanResult({
+        category: "error",
+        code: "network_error",
+        message: networkError
+      });
+      beep("error");
+      return;
+    }
+
+    if (!payload.ok) {
+      setScanResult({
+        category: "error",
+        code: "error",
+        message: payload.error?.message || "Scan request failed."
+      });
+      beep("error");
+      return;
+    }
+
+    const result = payload.result;
+    const attendee = payload.pass?.name ? ` (${payload.pass.name})` : "";
+    setScanResult({
+      category: result.category,
+      code: result.code,
+      message: `${result.message}${attendee}`
+    });
+    beep(result.category);
+    await loadScanHistory();
+
+    if (!response.ok && result.category === "error") {
+      setStatusStrip(els.loginStatus, "Scan rejected.", "error");
+    }
+  } finally {
+    state.scanInFlight = false;
   }
 };
 
 const onDecoded = (decodedText) => {
+  if (state.scanInFlight) {
+    return;
+  }
+
   const now = Date.now();
-  if (decodedText === state.lastDecodedValue && now - state.lastDecodedAt < 2000) {
+  if (decodedText === state.lastDecodedValue && now - state.lastDecodedAt < 1200) {
     return;
   }
 
@@ -298,7 +318,7 @@ const startScanner = async () => {
     await state.scanner.start(
       { facingMode: "environment" },
       {
-        fps: 12,
+        fps: 18,
         qrbox: { width: 280, height: 180 },
         aspectRatio: 1.777
       },

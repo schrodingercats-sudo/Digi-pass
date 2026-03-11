@@ -1,6 +1,6 @@
 const PASS_STORAGE_KEY = "passdigi.user.session.v1";
 const PASS_COOKIE_KEY = "passdigi_user_token";
-const STATUS_POLL_MS = 3000;
+const STATUS_POLL_MS = 1000;
 const LOCAL_API_ORIGIN = "http://127.0.0.1:3000";
 const LOCALHOST_API_ORIGIN = "http://localhost:3000";
 
@@ -494,6 +494,12 @@ const init = async () => {
 
   await bootFromSavedSession();
   startStatusPolling();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshPassStatus();
+    }
+  });
+  window.addEventListener("focus", refreshPassStatus);
   setStrip(els.registrationStatus, "Fill the form to generate your pass.");
   if (!state.pass) {
     setStrip(els.passStatus, "No active pass found on this device.");

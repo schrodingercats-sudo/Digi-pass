@@ -13,7 +13,7 @@ The stack is plain `HTML/CSS/JS` + Vercel serverless API routes + Supabase.
 
 1. User registers with name/email/phone.
 2. System issues a pass with:
-   - signed QR payload (`PDG:<jwt-token>`)
+   - short QR payload (`PD-XXXXXXXX`) for fast scan decode
    - human-readable fallback code (`PD-XXXXXXXX`)
 3. User pass is saved locally (`localStorage` + cookie token).
 4. Admin scans QR from `admin.html` or enters code manually.
